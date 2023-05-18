@@ -36,9 +36,20 @@ async function run() {
     })
 
     //get all toys data
-    app.get("/alltoys", async (req,res) => {
-        const result = await toyCollection.find({}).toArray();
+    app.get("/searchToy", async (req,res) => {
+        const result = await toyCollection.find({}).limit(20).toArray();
         res.send(result)
+    })
+
+    //get data base on search field
+    app.get("/searchToy/:text", async (req,res) => {
+        const text = req.params.text;
+          if(text){
+            const query = { toytitle: { $regex: text, $options: "i" } };
+            const result = await toyCollection.find(query).toArray();
+            res.send(result)
+          }
+       
     })
 
     //get specific toys details
