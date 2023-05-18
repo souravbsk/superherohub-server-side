@@ -26,12 +26,23 @@ async function run() {
 
     const toyCollection = client.db("superHeroDB").collection("toys")
 
+
+    //get toys base on category
+    app.get("/alltoys/:category", async (req ,res) => {
+        const categoryText = req.params.category;
+        const query = {category : categoryText}
+        const result = await toyCollection.find(query).toArray()
+        res.send(result)
+    })
+
     //add to toy 
     app.post("/alltoys", async (req,res) => {
         const newToy = req.body;
         const result = await toyCollection.insertOne(newToy);
         res.send(result)
     })
+
+
 
 
 
