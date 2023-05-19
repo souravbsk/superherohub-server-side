@@ -36,13 +36,13 @@ async function run() {
     })
 
     //get all toys data
-    app.get("/searchToy", async (req,res) => {
+    app.get("/alltoycollection", async (req,res) => {
         const result = await toyCollection.find({}).limit(20).toArray();
         res.send(result)
     })
 
     //get data base on search field
-    app.get("/searchToy/:text", async (req,res) => {
+    app.get("/alltoycollection/:text", async (req,res) => {
         const text = req.params.text;
           if(text){
             const query = { toytitle: { $regex: text, $options: "i" } };
@@ -65,6 +65,35 @@ async function run() {
     app.post("/alltoys", async (req,res) => {
         const newToy = req.body;
         const result = await toyCollection.insertOne(newToy);
+        res.send(result)
+    })
+
+    //my toys list (specific user)
+
+    app.get("/usertoys", async (req,res) => {
+        const userEmail = req.query.email;
+
+        const query = {sellermail: userEmail};
+        const result = await toyCollection.find(query).toArray();
+        res.send(result)
+        
+    })
+
+    //update toy details 
+    app.put("/toydetails/:id", async (req,res) => {
+        const id = req.params.id;
+        console.log(id);
+        const updateToyInfo = req.body;
+        console.log(updateToyInfo);
+        const filter = {_id: new ObjectId(id)};
+        const updateToy = {
+            $set:{
+                price:updateToyInfo.price,
+                quantity:updateToyInfo.quantity,
+                details:updateToyInfo.details
+            }
+        }
+        const result = await toyCollection.updateOne(filter, updateToy);
         res.send(result)
     })
 
