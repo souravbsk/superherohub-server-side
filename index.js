@@ -97,6 +97,14 @@ async function run() {
         res.send(result)
     })
 
+    // delete my toy
+    app.delete("/toydetails/:id", async (req,res) => {
+      const id = req.params.id;
+      const userEmail = req.query.email;
+      const query = {_id: new ObjectId(id),sellermail: userEmail}
+      const result = await toyCollection.deleteOne(query);
+      res.send(result)
+    })
 
 
 
