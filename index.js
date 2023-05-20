@@ -18,7 +18,7 @@ const uri = `mongodb+srv://${process.env.USER_DB}:${process.env.USER_PASS}@clust
 const verifyJWT = (req,res,next) => {
   const authorization = req.headers.authorization;
   if(!authorization){
-    return req.send(401).send({error:true,message:'unauthorized access'})
+     req.send(401).send({error:true,message:'unauthorized access'})
   }
   const token = authorization.split(" ")[1];
   jwt.verify(token, process.env.ACCESS_TOKEN_SECRET, function(err, decoded) {
@@ -67,8 +67,6 @@ async function run() {
 
 
 
-
-
     //get toys base on category
     app.get("/alltoys/:category", async (req ,res) => {
         const categoryText = req.params.category;
@@ -88,11 +86,18 @@ async function run() {
         const text = req.params.text;
           if(text){
             const query = { toytitle: { $regex: text, $options: "i" } };
-            const result = await toyCollection.find(query).toArray();
+            const result = await toyCollection.find(query).limit(20).toArray();
             res.send(result)
           }
-       
     })
+
+
+    //total toy
+    app.get("/totaltoy", async (req,res) => {
+      const result = await toyCollection.estimatedDocumentCount();
+      res.send({totalToy: 5})
+    })
+
 
     //get specific toys details
 
