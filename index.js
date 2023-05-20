@@ -2,6 +2,7 @@ const express = require("express");
 const cors = require("cors");
 const app = express();
 require("dotenv").config();
+const jwt = require("jsonwebtoken")
 const port = process.env.PORT || 5000;
 
 // middleware
@@ -11,20 +12,61 @@ app.use(express.json());
 const { MongoClient, ServerApiVersion, ObjectId } = require("mongodb");
 const uri = `mongodb+srv://${process.env.USER_DB}:${process.env.USER_PASS}@cluster0.pr3rbd0.mongodb.net/?retryWrites=true&w=majority`;
 // Create a MongoClient with a MongoClientOptions object to set the Stable API version
+
+
+//jwt verify function
+const verifyJWT = (req,res,next) => {
+  const authorization = req.headers.authorization;
+  if(!authorization){
+    return req.send(401).send({error:true,message:'unauthorized access'})
+  }
+  const token = authorization.split(" ")[1];
+  jwt.verify(token, process.env.ACCESS_TOKEN_SECRET, function(err, decoded) {
+   if(err) {
+    return res.send({error:true,message:"unauthorized access"})
+   }
+   req.decoded = decoded;
+   next()
+  });
+}
+
+
+
+
+
 const client = new MongoClient(uri, {
   serverApi: {
     version: ServerApiVersion.v1,
     strict: true,
     deprecationErrors: true,
   },
+  useNewUrlParser:true,
+  useUnifiedTopology:true,
+  maxPoolSize:10,
 });
 
 async function run() {
   try {
     // Connect the client to the server	(optional starting in v4.7)
-    await client.connect();
+     client.connect((err) => {
+      if(err){
+          console.log(err);
+          return
+      }
+  });
 
     const toyCollection = client.db("superHeroDB").collection("toys")
+
+
+    // jwt token collection
+    app.post("/jwt", async (req,res) => {
+      const user = req.body;
+      const token =  jwt.sign(user,process.env.ACCESS_TOKEN_SECRET, { expiresIn: '1h' });
+      res.send({token})
+    })
+
+
+
 
 
     //get toys base on category
@@ -68,29 +110,56 @@ async function run() {
         res.send(result)
     })
 
-    //my toys list (specific user)
+    //my toys list (specific user) (jwt verify and also asc ,dsc)
+    app.get("/usertoys/:text", verifyJWT, async (req,res) => {
+      
+      const decoded = req.decoded;
+      const text = req.params.text;
 
-    app.get("/usertoys", async (req,res) => {
-        const userEmail = req.query.email;
+      if(decoded?.email !== req.query?.email){
+        return res.status(401).send({error: 1,message: "forbidden access"})
+      }
 
-        const query = {sellermail: userEmail};
-        const result = await toyCollection.find(query).toArray();
-        res.send(result)
+      let query = {};
+      if(req.query?.email){
+        query = {sellermail: req.query.email};
+      }
+
+
+
+        if(text == "lth"){
+          const result = await toyCollection.find(query).sort({price:1}).toArray();
+          res.send(result)
+
+        }
+        else if(text == "htl"){
+          const result = await toyCollection.find(query).sort({price:-1}).toArray();
+          res.send(result)
+        }
+        else{
+          const result = await toyCollection.find(query).toArray();
+          res.send(result)
+        }
+
         
     })
 
     //update toy details 
     app.put("/toydetails/:id", async (req,res) => {
         const id = req.params.id;
-        console.log(id);
         const updateToyInfo = req.body;
-        console.log(updateToyInfo);
         const filter = {_id: new ObjectId(id)};
         const updateToy = {
             $set:{
-                price:updateToyInfo.price,
-                quantity:updateToyInfo.quantity,
-                details:updateToyInfo.details
+              photo : updateToyInfo.photo,
+              toytitle : updateToyInfo.toytitle,
+              sellername : updateToyInfo.sellername,
+              sellermail : updateToyInfo.sellermail,
+              category : updateToyInfo.category,
+              price : updateToyInfo.price,
+              ratings : updateToyInfo.ratings,
+              quantity : updateToyInfo.quantity,
+              details : updateToyInfo.details,
             }
         }
         const result = await toyCollection.updateOne(filter, updateToy);
