@@ -119,35 +119,37 @@ async function run() {
     app.get("/usertoys/:text", verifyJWT, async (req,res) => {
       
       const decoded = req.decoded;
+
       const text = req.params.text;
 
       if(decoded?.email !== req.query?.email){
         return res.status(401).send({error: 1,message: "forbidden access"})
       }
 
+      // console.log(req.query.email);
       let query = {};
       if(req.query?.email){
         query = {sellermail: req.query.email};
       }
-
-
-
-        if(text == "lth"){
-          const result = await toyCollection.find(query).sort({price:1}).toArray();
+  
+        if(text === "lth"){
+          const result = await toyCollection.find(query).sort({ price: 1 }).collation({ locale: "en_US", numericOrdering: true }).toArray()
           res.send(result)
-
         }
-        else if(text == "htl"){
-          const result = await toyCollection.find(query).sort({price:-1}).toArray();
+        
+       else if(text === "htl"){
+          const result = await toyCollection.find(query).sort({ price: -1 }).collation({ locale: "en_US", numericOrdering: true }).toArray()
           res.send(result)
         }
         else{
-          const result = await toyCollection.find(query).toArray();
+          const result = await toyCollection.find(query).toArray()
           res.send(result)
         }
-
-        
+      
     })
+
+
+
 
     //update toy details 
     app.put("/toydetails/:id", async (req,res) => {
